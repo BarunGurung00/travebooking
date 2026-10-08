@@ -26,18 +26,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         {children}
-
-        <Script id="emrld-loader" strategy="afterInteractive">
-          {`
-            (function () {
-              var script = document.createElement("script");
-              script.async = 1;
-              script.setAttribute("data-cmp-ab","2");
-              script.src = 'https://emrld.ltd/NTgyOTQx.js?t=582941';
-              document.head.appendChild(script);
-            })();
-          `}
-        </Script>
       </body>
     </html>
   );
