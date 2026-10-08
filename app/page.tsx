@@ -20,10 +20,23 @@ export default function Home() {
       <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="bg-blue-600 text-white font-black text-xl px-3 py-1.5 rounded-xl tracking-wider">
-              YATRI
-            </span>
-            <span className="text-xl font-bold text-gray-900 tracking-tight">Nepal</span>
+             <div className="flex items-baseline">
+                <span className="text-xl font-bold text-gray-800 tracking-tight ">
+                  My
+                </span>
+              
+                <span className="bg-sky-500 text-white font-black text-xl px-3 py-1.5 rounded-2xl tracking-tight italic mx-0.5">
+                  Himalayan
+                </span>
+              
+                <span className="text-xl font-bold text-gray-900 tracking-tight ">
+                  Trip
+                </span>
+              
+                <span className="text-sm font-black text-sky-500 italic tracking-tighter -ml-1 self-end pb-0.5">
+                  .com
+                </span>
+             </div>
           </div>
           
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-600">
@@ -135,7 +148,7 @@ export default function Home() {
 
       {/* FOOTER */}
       <footer className="bg-gray-900 text-gray-400 py-6 text-center text-xs">
-        <p>&copy; {new Date().getFullYear()} Yatri Nepal. Built for travelers across the Himalayas.</p>
+        <p>&copy; {new Date().getFullYear()} MyHimalayanTrip. Built for travelers across the Himalayas.</p>
       </footer>
 
     </div>
