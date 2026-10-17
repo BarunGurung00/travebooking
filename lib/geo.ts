@@ -36,9 +36,16 @@ export function sectionUrl(sectionKey: string, geo: GeoRow): string {
   return `/${sectionKey}-g${geo.geoId}-${geo.slug}`;
 }
 
+export function poiCategoryKey(category: string): string {
+  return category.charAt(0).toUpperCase() + category.slice(1);
+}
+
 /**
- * Build a POI detail URL: "/Poi_Review-g97740501-d100002-annapurna-circuit-trek"
+ * Build a POI detail URL: "/Trek_Review-g97740501-d100002-annapurna-circuit-trek"
  */
-export function poiUrl(poi: { poiId: number; slug: string }, geo: GeoRow): string {
-  return `/Poi_Review-g${geo.geoId}-d${poi.poiId}-${poi.slug}`;
+export function poiUrl(
+  poi: { poiId: number; slug: string; category: string },
+  geo: { geoId: number }
+): string {
+  return `/${poiCategoryKey(poi.category)}_Review-g${geo.geoId}-d${poi.poiId}-${poi.slug}`;
 }

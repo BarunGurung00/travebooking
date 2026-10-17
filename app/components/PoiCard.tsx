@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { MapPin, Star } from "lucide-react";
 import type { Poi, Geo } from "@prisma/client";
+import { poiUrl } from "@/lib/geo";
 
 type PoiWithGeo = Poi & { geo: Geo };
 
@@ -18,7 +19,7 @@ export default function PoiCard({ poi }: { poi: PoiWithGeo }) {
   const colorClass =
     CATEGORY_COLORS[poi.category] ?? "bg-slate-100 text-slate-800";
 
-  const url = `/Poi_Review-g${poi.geo.geoId}-d${poi.poiId}-${poi.slug}`;
+  const url = poiUrl(poi, poi.geo);
 
   return (
     <Link

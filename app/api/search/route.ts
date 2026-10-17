@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { poiUrl } from "@/lib/geo";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -40,7 +41,7 @@ export async function GET(req: Request) {
       name: g.name,
       type_detail: g.type,       // "country" | "province" | "district" | "city"
       slug: g.slug,
-      url: `/destinations-g${g.geoId}-${g.slug}`,
+      url: `/Tourism-g${g.geoId}-${g.slug}`,
       subtitle: g.type,
     })),
     ...pois.map((p) => ({
@@ -49,7 +50,7 @@ export async function GET(req: Request) {
       name: p.name,
       type_detail: p.category,   // "trek" | "hotel" | ...
       slug: p.slug,
-      url: `/Poi_Review-g${p.geo.geoId}-d${p.poiId}-${p.slug}`,
+      url: poiUrl(p, p.geo),
       subtitle: `${p.category} · ${p.geo.name}`,
     })),
   ];

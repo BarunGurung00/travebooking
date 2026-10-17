@@ -1,0 +1,22 @@
+# Dependencies & Builds
+node_modules/
+.next/
+out/
+build/
+
+# Lock files
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Media & Assets
+public/images/
+public/assets/
+*.png
+*.jpg
+*.jpeg
+*.svg
+
+# Environment / Logs
+.env*
+*.log

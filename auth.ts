@@ -3,6 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import Google from "next-auth/providers/google";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -11,6 +12,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     signIn: "/login",
   },
   providers: [
+    Google({
+      allowDangerousEmailAccountLinking: true,
+      authorization: {
+        params: {
+          scope: "openid email profile",
+          prompt: "consent",
+        },
+      },
+    }),
     Credentials({
       name: "credentials",
       credentials: {
@@ -37,25 +47,40 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           name: user.name,
           image: user.image,
         };
-      }
+      },
     }),
   ],
   callbacks: {
+    async signIn({ user, account, profile }) {
+      // Ensure Google profile picture is saved
+      if (account?.provider === "google" && profile?.picture) {
+        user.image = profile.picture as string;
+      }
+      return true;
+    },
+
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+
         const dbUser = await prisma.user.findUnique({
           where: { id: user.id as string },
-          select: { role: true },
+          select: { role: true, image: true },
         });
+
         token.role = dbUser?.role ?? "traveler";
+        token.picture = user.image ?? dbUser?.image ?? null;
       }
       return token;
     },
+
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string;
         (session.user as any).role = token.role;
+        if (token.picture) {
+          session.user.image = token.picture as string;
+        }
       }
       return session;
     },

@@ -20,12 +20,15 @@ export default function SectionTabs({
         {SECTIONS.map((section) => {
           const isActive =
             section.key.toLowerCase() === activeSection.toLowerCase();
+
           const count =
             section.category === null
               ? Object.values(counts).reduce((a, b) => a + b, 0)
               : counts[section.category] ?? 0;
 
           const Icon = section.icon;
+
+          // Tourism tab shows the geo's own name (e.g. "Pokhara")
           const displayLabel =
             section.key === "Tourism" ? geo.name : section.label;
 
