@@ -1,0 +1,112 @@
+import Link from "next/link";
+import { Check, MapPin, FileText, Clock } from "lucide-react";
+import type { Permit } from "@prisma/client";
+
+export default function PermitDetail({
+  permit,
+  relatedPermits,
+}: {
+  permit: Permit;
+  relatedPermits: Array<{ name: string; slug: string }>;
+}) {
+  const costDetails = (permit.costDetails as any[]) ?? [];
+  const whereToGet = (permit.whereToGet as string[]) ?? [];
+  const documents = (permit.documents as string[]) ?? [];
+
+  return (
+    <div className="space-y-6">
+      {/* Cost */}
+      {costDetails.length > 0 && (
+        <div className="bg-white border border-slate-200 rounded-3xl p-6">
+          <h2 className="text-lg font-black text-slate-900 mb-4">Cost</h2>
+          <ul className="space-y-2">
+            {costDetails.map((c, i) => (
+              <li
+                key={i}
+                className="flex items-center justify-between text-sm border-b border-slate-100 pb-2 last:border-b-0 last:pb-0"
+              >
+                <span className="text-slate-700">{c.label}</span>
+                <span className="font-bold text-slate-900">{c.value}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Where to Get */}
+      {whereToGet.length > 0 && (
+        <div className="bg-white border border-slate-200 rounded-3xl p-6">
+          <h2 className="text-lg font-black text-slate-900 mb-4 flex items-center gap-2">
+            <MapPin className="w-5 h-5 text-sky-600" /> Where to Get
+          </h2>
+          <ul className="space-y-2">
+            {whereToGet.map((loc, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
+                <Check className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
+                <span>{loc}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Documents */}
+      {documents.length > 0 && (
+        <div className="bg-white border border-slate-200 rounded-3xl p-6">
+          <h2 className="text-lg font-black text-slate-900 mb-4 flex items-center gap-2">
+            <FileText className="w-5 h-5 text-sky-600" /> Documents Needed
+          </h2>
+          <ul className="space-y-2">
+            {documents.map((doc, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
+                <Check className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
+                <span>{doc}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Validity */}
+      {permit.validity && (
+        <div className="bg-white border border-slate-200 rounded-3xl p-6">
+          <h2 className="text-lg font-black text-slate-900 mb-2 flex items-center gap-2">
+            <Clock className="w-5 h-5 text-sky-600" /> Validity
+          </h2>
+          <p className="text-sm text-slate-700">{permit.validity}</p>
+        </div>
+      )}
+
+      {/* Notes */}
+      {permit.notes && (
+        <div className="bg-amber-50 border border-amber-200 rounded-3xl p-6">
+          <h2 className="text-lg font-black text-slate-900 mb-2">Good to Know</h2>
+          <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">
+            {permit.notes}
+          </p>
+        </div>
+      )}
+
+      {/* Related Permits */}
+      {relatedPermits.length > 0 && (
+        <div className="bg-white border border-slate-200 rounded-3xl p-6">
+          <h2 className="text-lg font-black text-slate-900 mb-4">
+            You Might Also Need
+          </h2>
+          <ul className="space-y-2">
+            {relatedPermits.map((rp) => (
+              <li key={rp.slug}>
+                <Link
+                  href={`#`}
+                  className="text-sm font-bold text-sky-600 hover:text-sky-800 hover:underline"
+                >
+                  → {rp.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -23,6 +23,7 @@ model User {
   accounts Account[]
   sessions Session[]
   reviews Review[]
+  wishlist Wishlist[]
 }
 
 model Account {
@@ -57,6 +58,7 @@ model Session {
 }
 
 model VerificationToken {
+  id         Int      @id @default(autoincrement())
   identifier String
   token      String   @unique
   expires    DateTime
@@ -101,6 +103,7 @@ model Poi {
   @@index([name])
 
   reviews Review[]
+  wishlist Wishlist[]
 }
 
 model Review {
@@ -118,4 +121,48 @@ model Review {
   @@unique([userId, poiId])
   @@index([poiId])
   @@index([userId])
+}
+
+model Permit {
+  id           Int      @id @default(autoincrement())
+  parentId     Int?
+  parent       Permit?  @relation("PermitTree", fields: [parentId], references: [id])
+  children     Permit[] @relation("PermitTree")
+
+  type         String
+  name         String
+  slug         String
+  description  String?  @db.Text
+  displayOrder Int      @default(0)
+
+  aliases      Json?
+  quickSummary Json?
+  costDetails  Json?
+  whereToGet   Json?
+  documents    Json?
+  validity     String?
+  notes        String?  @db.Text
+  relatedSlugs Json?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([parentId, slug])
+  @@index([type])
+  @@index([parentId])
+}
+
+
+model Wishlist {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  poiId     Int
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  poi  Poi  @relation(fields: [poiId], references: [poiId], onDelete: Cascade)
+
+  @@unique([userId, poiId])
+  @@index([userId])
+  @@index([poiId])
 }

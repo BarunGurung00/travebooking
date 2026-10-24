@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
 import SiteHeader from "./components/SiteHeader";
 import SiteFooter from "./components/SiteFooter";
+import { WishlistProvider } from "./components/wishlist/WishlistProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -28,13 +29,17 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} antialiased`}
     >
-      <body className="min-h-[100dvh] flex flex-col bg-[#f8f9fa]">
+      <body className="min-h-[100dvh] bg-[#f8f9fa]">
         <SessionProvider>
-          <SiteHeader />
-          <div className="flex-1 flex flex-col">{children}</div>
-          <SiteFooter />
+          <WishlistProvider>
+            <div className="min-h-[100dvh] flex flex-col">
+              <SiteHeader />
+              <div className="flex-1 flex flex-col pt-16">{children}</div>
+              <SiteFooter />
+            </div>
+          </WishlistProvider>
         </SessionProvider>
       </body>
     </html>

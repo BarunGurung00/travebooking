@@ -1,5 +1,6 @@
 import { Star, MapPin } from "lucide-react";
 import type { Poi, Geo } from "@prisma/client";
+import WishlistButton from "@/app/components/wishlist/WishlistButton";
 
 type PoiWithGeo = Poi & { geo: Geo };
 
@@ -21,13 +22,10 @@ export default function PoiHero({ poi }: { poi: PoiWithGeo }) {
     <div className="bg-gradient-to-br from-sky-50 to-slate-100 rounded-3xl overflow-hidden">
       <div className="h-48 sm:h-64 flex items-center justify-center relative">
         <MapPin className="w-16 h-16 text-sky-300" />
-
-        {/* Category badge */}
-        <span
-          className={`absolute top-4 left-4 text-[10px] font-black uppercase px-3 py-1.5 rounded-lg ${colorClass}`}
-        >
-          {poi.category}
-        </span>
+        <span className="absolute top-4 left-4 ...">{poi.category}</span>
+        <div className="absolute top-4 right-4">
+          <WishlistButton poiId={poi.poiId} size="lg" />
+        </div>
       </div>
 
       <div className="p-6 sm:p-8">

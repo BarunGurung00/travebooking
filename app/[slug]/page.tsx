@@ -4,12 +4,12 @@ import { getSectionByKey } from "@/lib/sections";
 import { buildBreadcrumb, poiCategoryKey, type GeoRow } from "@/lib/geo";
 import Breadcrumb from "@/app/components/Breadcrumb";
 import SectionTabs from "@/app/components/SectionTabs";
-import PoiCard from "@/app/components/PoiCard";
+import PoiCard from "@/app/components/poi/PoiCard";
 import EmptySection from "@/app/components/EmptySection";
-import PoiHero from "@/app/components/PoiHero";
-import PoiInfo from "@/app/components/PoiInfo";
-import ReviewForm from "@/app/components/ReviewForm";
-import ReviewList, { type ReviewWithUser } from "@/app/components/ReviewList";
+import PoiHero from "@/app/components/poi/PoiHero";
+import PoiInfo from "@/app/components/poi/PoiInfo";
+import ReviewForm from "@/app/components/review/ReviewForm";
+import ReviewList, { type ReviewWithUser } from "@/app/components/review/ReviewList";
 
 export default async function CatchAllPage({
   params,

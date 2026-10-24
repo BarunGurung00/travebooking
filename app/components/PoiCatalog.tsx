@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import PoiCard from "./PoiCard";
+import PoiCard from "./poi/PoiCard";
 
 export default async function PoiCatalog({
   category,

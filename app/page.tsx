@@ -69,7 +69,7 @@ const TABS: TabConfig[] = [
     label: "Visa & Permits",
     icon: ScrollText,
     heading: "Nepal visa, TIMS & trekking permits",
-    route: "/permits",
+    route: "/Nepal-Permits",
   },
 ];
 
@@ -100,7 +100,7 @@ const DIRECTORY = [
     copy: "Licensed guides by region.",
   },
   {
-    href: "/permits",
+    href: "/Permits",
     title: "Permits",
     copy: "TIMS and national park entry.",
   },
@@ -120,7 +120,7 @@ export default function Home() {
           }}
         />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center mt-5">
           <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-extrabold bg-sky-500/20 text-sky-400 border border-sky-500/30 mb-3">
             Nepal&apos;s Official Travel & Treks Guide
           </span>
@@ -147,11 +147,10 @@ export default function Home() {
                   <button
                     key={tab.key}
                     onClick={() => setActiveTab(tab.key)}
-                    className={`flex items-center gap-1.5 text-xs font-black px-4 py-2 rounded-full transition-all ${
-                      isActive
-                        ? "bg-white text-sky-700 shadow-sm"
-                        : "text-white/85 hover:text-white hover:bg-white/10"
-                    }`}
+                    className={`flex items-center gap-1.5 text-xs font-black px-4 py-2 rounded-full transition-all ${isActive
+                      ? "bg-white text-sky-700 shadow-sm"
+                      : "text-white/85 hover:text-white hover:bg-white/10"
+                      }`}
                   >
                     <Icon className="w-4 h-4" />
                     {tab.label}

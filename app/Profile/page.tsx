@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import ProfileForm from "@/app/components/ProfileForm";
+import ProfileForm from "@/app/components/profile/ProfileForm";
 
 export default async function ProfilePage() {
   // 1. Must be logged in
