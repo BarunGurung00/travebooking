@@ -1,0 +1,29 @@
+services:
+  directus:
+    image: directus/directus:11.17.0
+    ports:
+      - "8055:8055"
+    environment:
+      SECRET: "esog6Z+P1f8S4wdqy7Hy5JFHY0rZT7CKXt37yxB9d4U="
+      ADMIN_EMAIL: "barungurung00@gmail.com"
+      ADMIN_PASSWORD: "ChooseAStrongPassword123!"
+      DB_CLIENT: "mysql"
+      DB_HOST: "host.docker.internal"
+      DB_PORT: "3306"
+      DB_DATABASE: "myhimalayantrip"
+      DB_USER: "root"
+      DB_PASSWORD: "Alwaysbg@123"
+    volumes:
+      - ./uploads:/directus/uploads
+      - ./extensions:/directus/extensions
+
+
+    # To use CMS, start docker 
+
+    # step 1 - Start the sql server
+    # step 2 - cd directus-local
+
+    #  - docker desktop start
+    #  - docker compose up -d
+
+    # http://localhost:8055/admin

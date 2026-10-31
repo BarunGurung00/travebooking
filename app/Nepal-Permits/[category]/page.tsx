@@ -48,7 +48,7 @@ export default async function CategoryPage({
   const Icon = CATEGORY_ICONS[category.slug] ?? Mountain;
 
   return (
-    <div className="max-w-5xl mx-auto px-4 pb-12 pt-24">
+    <div className="max-w-5xl mx-auto px-4 pb-12 pt-3">
       {/* Breadcrumb */}
       <nav className="text-xs flex items-center gap-2 text-slate-500 mb-6">
         <Link href="/" className="hover:text-sky-600">

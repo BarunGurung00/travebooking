@@ -7,8 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ---------- AUTH TABLES ----------
-
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -16,13 +14,12 @@ model User {
   emailVerified DateTime?
   image         String?
   passwordHash  String?
-  role          String    @default("traveler") // traveler | vendor | admin
+  role          String    @default("traveler")
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-
-  accounts Account[]
-  sessions Session[]
-  reviews Review[]
+  accounts      Account[]
+  reviews       Review[]
+  sessions      Session[]
   wishlist Wishlist[]
 }
 
@@ -39,8 +36,7 @@ model Account {
   scope             String?
   id_token          String? @db.Text
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
   @@index([userId])
@@ -51,8 +47,7 @@ model Session {
   sessionToken String   @unique
   userId       String
   expires      DateTime
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
@@ -69,16 +64,15 @@ model VerificationToken {
 model Geo {
   geoId     Int      @id @default(autoincrement())
   parentId  Int?
-  parent    Geo?     @relation("GeoTree", fields: [parentId], references: [geoId])
-  children  Geo[]    @relation("GeoTree")
   name      String
   type      String
   slug      String
   lat       Float?
   lng       Float?
   createdAt DateTime @default(now())
-
-  pois Poi[]
+  parent    Geo?     @relation("GeoTree", fields: [parentId], references: [geoId])
+  children  Geo[]    @relation("GeoTree")
+  pois      Poi[]
 
   @@unique([parentId, slug])
   @@index([name])
@@ -88,7 +82,6 @@ model Geo {
 model Poi {
   poiId       Int      @id @default(autoincrement())
   geoId       Int
-  geo         Geo      @relation(fields: [geoId], references: [geoId], onDelete: Cascade)
   category    String
   name        String
   slug        String
@@ -97,26 +90,26 @@ model Poi {
   rating      Float?
   meta        Json?
   createdAt   DateTime @default(now())
+  geo         Geo      @relation(fields: [geoId], references: [geoId], onDelete: Cascade)
+  
+  reviews     Review[]
+  wishlist Wishlist[]
 
   @@unique([geoId, slug])
   @@index([geoId, category])
   @@index([name])
-
-  reviews Review[]
-  wishlist Wishlist[]
 }
 
 model Review {
-  reviewId   Int      @id @default(autoincrement())
-  userId     String
-  poiId      Int
-  rating     Int
-  text       String   @db.Text
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  poi  Poi  @relation(fields: [poiId], references: [poiId], onDelete: Cascade)
+  reviewId  Int      @id @default(autoincrement())
+  userId    String
+  poiId     Int
+  rating    Int
+  text      String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  poi       Poi      @relation(fields: [poiId], references: [poiId], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, poiId])
   @@index([poiId])
@@ -144,6 +137,15 @@ model Permit {
   notes        String?  @db.Text
   relatedSlugs Json?
 
+  longDescription  String?   @db.Text
+  imageSrc         String?
+  imageCaption     String?
+  whoNeeds         Json?
+  whoDoesnt        Json?
+  checkedAt        Json?
+  faqs             Json?
+  lastVerified     DateTime?
+
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -151,7 +153,6 @@ model Permit {
   @@index([type])
   @@index([parentId])
 }
-
 
 model Wishlist {
   id        Int      @id @default(autoincrement())

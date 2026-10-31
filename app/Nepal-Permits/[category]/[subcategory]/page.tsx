@@ -59,7 +59,7 @@ export default async function SubcategoryPage({
   });
 
   return (
-    <div className="max-w-5xl mx-auto px-4 pb-12 pt-24">
+    <div className="max-w-5xl mx-auto px-4 pb-12 pt-3">
       {/* Breadcrumb */}
       <nav className="text-xs flex flex-wrap items-center gap-2 text-slate-500 mb-6">
         <Link href="/" className="hover:text-sky-600">

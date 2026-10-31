@@ -1,37 +1,45 @@
-# Overall Project architecture and key directory structure
-
-Tech stack, libraries, and coding patterns we are following.
-
-Key decisions made, features completed, and business logic established.
-
-Active bugs, current working features, and immediate next steps.
-
-Any specific instructions or context a new AI session must know to continue seamlessly.
-AI_CONTEXT.md — Full Project Handoff
-Create a file called AI_CONTEXT.md at your project root (/Users/barun/Desktop/my-ota/AI_CONTEXT.md). Paste the entire block below into it.
-
-markdown
 # AI_CONTEXT.md — MyHimalayanTrip Project Handoff
 
 This file is the source of truth for any AI session working on this project.
 Read it fully before writing any code. Update it when major decisions are made.
+
+**Last updated:** 2026-10-31
+
+---
+
+## 0. HOW TO USE THIS FILE (READ FIRST)
+
+If you are a new AI session:
+1. Read this entire file before doing anything.
+2. Reply with: "I've read AI_CONTEXT.md. Here's what I understand: [tech stack], [last 3 things built], [what's broken], [what's next]."
+3. Wait for the user's instruction before writing code.
+4. Test after every change.
+5. Update this file when a major decision is made.
+
+**Full conversation history:**
+https://chat.deepseek.com/share/ryuxg4gf4hruktx387
+
 
 ---
 
 ## 1. PROJECT OVERVIEW
 
 **Name:** MyHimalayanTrip
-**Type:** Nepal travel & treks directory + planner (TripAdvisor-style, focused on Nepal — Himalayas, hills, Terai)
-**Stage:** Phase 6 complete. Auth, data, search, destination pages, POI pages, and reviews all working.
+**Type:** Nepal travel & treks directory + planner (TripAdvisor-style)
+**Stage:** Permits system (4 levels), Wishlist, and Directus CMS all built and working **locally**. Deploy to production is deliberately **deferred**.
 
 **Long-term vision:**
-- Nepal-specific travel planner (not just Himalaya — all of Nepal)
-- Eventually add OTA features (bookings, payments, vendor accounts)
-- Reviews are the current community feature
+- Nepal-specific travel planner (Himalayas, hills, Terai — all of Nepal)
+- OTA features eventually (bookings, payments, vendor accounts)
+- Reviews + wishlist are the current community features
 
 **Owner:** Barun (solo developer)
 **Local path:** `/Users/barun/Desktop/my-ota`
 **Local URL:** `http://localhost:3000`
+**Directus CMS:** `http://localhost:8055`
+
+**Explicit user preference — Deploy deferred:**
+The user chose to NOT deploy yet. Priority is (1) getting modular seeds working cleanly, then (2) filling permit content, then (3) deploying as a batch. Do NOT push to Aiven/Vercel or run `prisma migrate deploy` against production without explicit confirmation.
 
 ---
 
@@ -39,76 +47,136 @@ Read it fully before writing any code. Update it when major decisions are made.
 
 | Layer | Technology | Version |
 |---|---|---|
-| Framework | Next.js (App Router) | 16.3.8 (Turbopack) |
+| Framework | Next.js App Router (Turbopack) | 16.3.8 |
 | Language | TypeScript | 5.9.3 |
-| Styling | Tailwind CSS | v4 (utility classes inline) |
+| Styling | Tailwind CSS | v4 |
 | Icons | lucide-react | latest |
 | Auth | Auth.js (NextAuth v5) | beta |
-| ORM | Prisma | 6.19.3 (stable, NOT 8 RC) |
-| Database | MySQL | 9.2.0 (local, Homebrew / MySQL installer) |
-| Password hashing | bcryptjs | latest |
-| Email (future) | Resend (planned) | — |
-| Hosting (future) | Vercel + Neon Postgres (planned) | — |
+| ORM | Prisma | 6.19.3 (STABLE — NOT v8 RC) |
+| DB (dev) | MySQL | 9.2.0 (local) |
+| DB (prod) | Aiven MySQL | 8.4.11 |
+| Password | bcryptjs | latest |
+| CMS | Directus (Docker) | 11.17.0 |
+| Container | Docker Desktop | 29.9.2 |
+| Compose | Docker Compose | v5.6.1 |
 
-**IMPORTANT:** Do NOT upgrade Prisma to v8 RC. Stay on 6.x. v8 renamed `prisma migrate` → `prisma migration` and breaks workflows.
+**CRITICAL:** Do NOT upgrade Prisma to v8 RC. Stay on 6.x. v8 renamed `prisma migrate` → `prisma migration`.
 
 ---
 
 ## 3. DIRECTORY STRUCTURE
 my-ota/
-├── .env ← DATABASE_URL, AUTH_SECRET, AUTH_URL, AUTH_GOOGLE_*, MAPBOX
-├── auth.ts ← Auth.js config (Google + Credentials, JWT sessions)
+├── .env
+├── auth.ts ← Auth.js config
+├── package.json ← has "prisma": { "seed": "tsx prisma/seed.ts" }
+│
 ├── prisma/
-│ ├── schema.prisma ← User, Account, Session, VerificationToken, Geo, Poi, Review
-│ ├── migrations/ ← Migration history
-│ └── seed.ts ← Seed data: 31 geos, 30 POIs
+│ ├── schema.prisma ← User, Account, Session, VerificationToken, Geo, Poi, Review, Permit, Wishlist
+│ ├── seed.ts ← CURRENTLY STILL HAS geos + POIs inline. Needs to become orchestrator.
+│ ├── seed-permits.ts ← DEPRECATED — delete after verification
+│ ├── seed-permits-batch2.ts ← DEPRECATED — delete after verification
+│ ├── migrations/
+│ └── seeds/
+│ └── permit/
+│ ├── categories.ts ← STATUS UNKNOWN — verify exists
+│ ├── visa-tims.ts ← STATUS UNKNOWN — verify exists
+│ ├── national-parks.ts ← STATUS UNKNOWN — verify exists
+│ ├── restricted-areas.ts ← STATUS UNKNOWN — verify exists
+│ ├── local-municipality.ts ← STATUS UNKNOWN — verify exists
+│ ├── climbing.ts ← STATUS UNKNOWN — verify exists
+│ └── special-clearances.ts ← CONFIRMED CREATED this session
+│
 ├── lib/
 │ ├── prisma.ts ← PrismaClient singleton
 │ ├── geo.ts ← buildBreadcrumb, sectionUrl, poiUrl, poiCategoryKey
-│ └── sections.ts ← SECTIONS array (Tourism, Hotels, Treks, Transports, Guides, Permits)
-├── types/
-│ └── next-auth.d.ts ← Session type extensions (id, role)
-├── app/
-│ ├── layout.tsx ← Root layout: SessionProvider + SiteHeader + SiteFooter
-│ ├── page.tsx ← Homepage (hero + tabs + SearchBox + DIRECTORY grid)
-│ ├── globals.css
-│ ├── [slug]/
-│ │ └── page.tsx ← CATCH-ALL: handles both /Tourism-g{id}-{slug} and /Trek_Review-g{id}-d{id}-{slug}
-│ ├── profile/
-│ │ ├── page.tsx ← Profile page (user info + edit form)
-│ │ └── edit/page.tsx ← (NOT BUILT YET — planned)
-│ ├── bookings/page.tsx ← Placeholder "coming soon"
-│ ├── trips/page.tsx ← Placeholder "coming soon"
-│ ├── wishlist/page.tsx ← Placeholder "coming soon"
-│ ├── login/page.tsx ← Login (email/password + Google)
-│ ├── signup/page.tsx ← Signup (email/password + Google)
-│ ├── Destinations/page.tsx ← Static route (basic)
-│ ├── Treks/page.tsx ← Static route (basic)
-│ ├── Transport/page.tsx ← Static route (basic)
-│ ├── Guides/page.tsx ← Static route (basic)
-│ ├── api/
-│ │ ├── auth/[...nextauth]/route.ts ← Auth.js handlers
-│ │ ├── signup/route.ts ← POST /api/signup
-│ │ ├── search/route.ts ← GET /api/search?q=
-│ │ ├── reviews/route.ts ← GET/POST /api/reviews
-│ │ └── profile/route.ts ← PATCH /api/profile
-│ └── components/
-│ ├── SiteHeader.tsx ← Logo + AuthButtons
-│ ├── SiteFooter.tsx ← Copyright
-│ ├── AuthButtons.tsx ← Logged-out buttons OR avatar dropdown (Profile/Bookings/Trips/Wishlist/Sign out)
-│ ├── SearchBox.tsx ← Debounced typeahead, fetches /api/search
-│ ├── Breadcrumb.tsx ← Geo tree breadcrumb
-│ ├── SectionTabs.tsx ← Tourism/Hotels/Treks/etc tabs with count badges
-│ ├── PoiCard.tsx ← POI card (destination pages)
-│ ├── PoiHero.tsx ← POI page hero
-│ ├── PoiInfo.tsx ← POI info grid
-│ ├── PoiCatalog.tsx ← (unused? check)
-│ ├── EmptySection.tsx ← Empty state for sections
-│ ├── ReviewForm.tsx ← Star rating + textarea + submit
-│ ├── ReviewList.tsx ← Review display list
-│ ├── ProfileForm.tsx ← Edit name/email form
-│ ├── PlaceholderPage.tsx ← Shared "coming soon" UI
-│ └── TravelpayoutsWidget.tsx ← (external widget)
+│ ├── permit.ts ← buildPermitBreadcrumb
+│ └── sections.ts ← SECTIONS array
+│
+├── types/next-auth.d.ts ← Session type extensions (id, role)
+│
+├── directus-local/
+│ ├── docker-compose.yml
+│ ├── uploads/
+│ └── extensions/
+│
+├── public/permits/ ← permit images
+│ ├── tims-card.png
+│ ├── sagarmatha-np.jpg
+│ ├── acap.jpg
+│ ├── khumbu-municipality.jpeg
+│ └── rap.jpg
+│
+└── app/
+├── layout.tsx ← SessionProvider + WishlistProvider + SiteHeader + SiteFooter
+├── page.tsx ← Homepage
+├── globals.css
+│
+├── Nepal-Permits/ ← 4-level permit system
+│ ├── content.ts ← static editorial data
+│ ├── page.tsx ← hub (9 sections + sticky TOC + search)
+│ └── [category]/
+│ ├── page.tsx ← subcategory listing
+│ └── [subcategory]/
+│ ├── page.tsx ← permit cards list
+│ └── [slug]/page.tsx ← permit detail
+│
+├── [slug]/page.tsx ← CATCH-ALL for geo pages + POI pages (regex parsing)
+├── profile/page.tsx
+├── login/page.tsx
+├── signup/page.tsx
+├── wishlist/page.tsx ← real wishlist with items + empty state
+├── Destinations/page.tsx
+├── Treks/page.tsx
+├── Transport/page.tsx
+├── Guides/page.tsx
+│
+├── api/
+│ ├── auth/[...nextauth]/route.ts
+│ ├── signup/route.ts
+│ ├── search/route.ts
+│ ├── reviews/route.ts
+│ ├── profile/route.ts
+│ ├── permits/search/route.ts ← raw SQL on Permit (name + aliases JSON + description)
+│ └── wishlist/
+│ ├── route.ts ← GET list, POST save
+│ ├── ids/route.ts ← GET just IDs
+│ └── [poiId]/route.ts ← DELETE
+│
+└── components/
+├── SiteHeader.tsx
+├── SiteFooter.tsx
+├── AuthButtons.tsx
+├── SearchBox.tsx
+├── Breadcrumb.tsx
+├── SectionTabs.tsx
+├── EmptySection.tsx
+├── PlaceholderPage.tsx
+├── poi/{PoiCard, PoiHero, PoiInfo}.tsx
+├── review/{ReviewForm, ReviewList}.tsx
+├── profile/ProfileForm.tsx
+├── wishlist/
+│ ├── WishlistProvider.tsx
+│ ├── WishlistButton.tsx
+│ └── WishlistCard.tsx
+└── permits/
+├── PermitCategoryCard.tsx
+├── PermitSubCategoryCard.tsx
+├── PermitListCard.tsx
+├── PermitDetail.tsx
+├── PermitOverviewCard.tsx
+├── PermitSearch.tsx
+├── PermitMatrix.tsx
+├── PermitLocationCard.tsx
+├── PermitImageCard.tsx
+├── PermitLightbox.tsx
+├── PermitPhoto.tsx
+├── PermitWhoNeeds.tsx
+├── PermitCheckpoints.tsx
+├── PermitFAQs.tsx
+├── DecisionGuide.tsx
+├── SecondaryClearancesTable.tsx
+├── PermitDetailBlock.tsx
+└── PermitPaper.tsx
 
 text
 
@@ -116,15 +184,15 @@ text
 
 ## 4. KEY ARCHITECTURAL DECISIONS
 
-### 4.1 URL Scheme (TripAdvisor-style)
+### 4.1 URL Schemes (locked in)
 
 **Geo pages (places):**
-/Tourism-g{geoId}-{slug} → overview
-/Hotels-g{geoId}-{slug} → hotels only
-/Treks-g{geoId}-{slug} → treks only
-/Transports-g{geoId}-{slug} → transport only
-/Guides-g{geoId}-{slug} → guides only
-/Permits-g{geoId}-{slug} → permits only
+/Tourism-g{geoId}-{slug} ← overview
+/Hotels-g{geoId}-{slug}
+/Treks-g{geoId}-{slug}
+/Transports-g{geoId}-{slug}
+/Guides-g{geoId}-{slug}
+/Permits-g{geoId}-{slug}
 
 text
 
@@ -133,35 +201,34 @@ text
 
 text
 
-Examples:
-- `/Trek_Review-g97710301-d100001-everest-base-camp-trek`
-- `/Hotel_Review-g97740501-d200002-yak-yeti-pokhara`
-
-**Both handled by ONE catch-all route:** `app/[slug]/page.tsx`
-
-**REGEX PARSING (critical):**
-- POI: `^([A-Za-z]+)_Review-g(\d+)-d(\d+)-(.+)$`
-- GEO: `^([A-Za-z]+)-g(\d+)-(.+)$`
-
-**DO NOT create separate `[geo]` and `[poi]` folders.** Next.js forbids two dynamic folders with different names at the same level.
-
-### 4.2 Geo ID Scheme (Government-backed)
-
-Based on Nepal's official district codes (Central Bureau of Statistics):
-977 Nepal (country code)
-9771-9777 Provinces (1-7)
-977 + gov_district Districts (e.g., 977306 = Kathmandu, gov code 306)
-977 + district + XX Cities (e.g., 97730601 = Kathmandu city)
+**Permit pages (4-level):**
+/Nepal-Permits
+/Nepal-Permits/[category]
+/Nepal-Permits/[category]/[subcategory]
+/Nepal-Permits/[category]/[subcategory]/[slug]
 
 text
 
-**Rules:**
-- Root = `977` (Nepal dialing code)
-- District = `977` + CBS 3-digit code
-- City = district ID + 2-digit sequence (01-99)
-- Max ID length: 8 digits
+**CRITICAL ROUTING RULES:**
+- Geo + POI: one catch-all at `app/[slug]/page.tsx` with regex parsing
+- Permits: 4 nested dynamic folders under `app/Nepal-Permits/`
+- DO NOT create separate `[geo]` and `[poi]` folders at same level — Next.js forbids
+- DO NOT create `[category]` and `[subcategory]` as siblings — must be nested
+- `app/[slug]/page.tsx` does NOT catch `/Nepal-Permits/*` because `/Nepal-Permits` is a static folder under `app/`. Verify before changing either route.
 
-**NO `place` level in Geo.** Places (Thamel, EBC, Phewa Lake) are POIs with category `place`.
+**Regex (critical):**
+- POI: `^([A-Za-z]+)_Review-g(\d+)-d(\d+)-(.+)$`
+- GEO: `^([A-Za-z]+)-g(\d+)-(.+)$`
+
+### 4.2 Geo ID Scheme (Government-backed)
+977 ← Nepal (country code)
+9771-9777 ← Provinces
+977 + gov_district_code ← Districts (e.g., 977306 = Kathmandu)
+977 + district + XX ← Cities
+
+text
+
+NO `place` level in Geo. Places are POIs with `category = 'place'`.
 
 ### 4.3 POI ID Scheme (Category blocks)
 100000-199999 Trek
@@ -174,745 +241,596 @@ text
 
 text
 
-6-digit IDs. First digit = category. Auto-increment within block (but seeded with explicit IDs).
+### 4.4 Permit ID Scheme (Self-referencing tree)
 
-### 4.4 Auth Architecture
+`Permit` table has `parentId` (nullable self-reference):
+- `type = 'category'` → 4 root rows (entry, trekking, climbing, special), `parentId = null`
+- `type = 'subcategory'` → child of category
+- `type = 'permit'` → child of subcategory
 
-- **Auth.js v5** with Prisma adapter
-- **JWT sessions** (not DB sessions)
-- **Google OAuth** with `allowDangerousEmailAccountLinking: true` (auto-links if email matches)
-- **Credentials (email/password)** for email signups
-- **Session callback** adds `id` and `role` to session
-- **JWT callback** fetches fresh `role` and `image` from DB on sign-in
-- **`signIn` callback** forces `user.image = profile.picture` for Google users
+**Type hierarchy enforced in code, not DB.**
 
-**Google config in `auth.ts`:**
-```ts
-Google({
-  allowDangerousEmailAccountLinking: true,
-  authorization: {
-    params: {
-      scope: "openid email profile",
-      prompt: "consent",
-    },
-  },
-}),
-4.5 Data Model Relationships
+`@@unique([parentId, slug])` — slug unique per parent.
+
+**Known parent IDs in local DB (may differ on Aiven):**
+- `tourist-visa` subcategory → 1 (child of entry)
+- `tims` subcategory → 6
+- `protected-area` subcategory → 7
+- `restricted-area` subcategory → 8
+- `local-municipality` subcategory → 9
+- `trekking-peaks` subcategory → 10
+- `expedition-peaks` subcategory → 11
+- `drone` subcategory → 12
+- `filming` subcategory → 13
+- `heritage` subcategory → 14
+- `adventure` subcategory → 15
+
+(Verify with `SELECT id, slug FROM Permit WHERE type = 'subcategory'` before relying on these.)
+
+### 4.5 Auth Architecture
+
+- Auth.js v5 with Prisma adapter
+- JWT sessions (not DB sessions)
+- Google OAuth (`allowDangerousEmailAccountLinking: true`, scope `openid email profile`, `prompt: consent`)
+- Credentials (email/password with bcrypt)
+- `signIn` callback forces `user.image = profile.picture` for Google
+- `jwt` callback fetches fresh `role` + `image` from DB
+- `session` callback injects `id`, `role`, `picture`
+
+### 4.6 Data Model Relationships
+User 1:N Account, Session, Review, Wishlist
+Geo 1:N Poi (via geoId)
+Geo 1:N Geo (self-reference via parentId)
+Poi 1:N Review, Wishlist
+Permit 1:N Permit (self-reference via parentId)
+
 text
-User 1:N Account    (OAuth links)
-User 1:N Session    (login sessions — unused, JWT strategy)
-User 1:N Review     (written reviews)
-Geo  1:N Poi        (things in a place)
-Geo  1:N Geo        (self-reference tree via parentId)
-Poi  1:N Review     (reviews on a POI)
-Review constraint: @@unique([userId, poiId]) — one review per user per POI.
 
-Rating recompute: After each review POST, Poi.rating is recalculated as average of all reviews.
+Constraints:
+- `Review`: `@@unique([userId, poiId])`
+- `Permit`: `@@unique([parentId, slug])`
+- `Wishlist`: `@@unique([userId, poiId])`
 
-4.6 Section Tabs (Profile vs Destination)
-Destination page section tabs (app/[slug]/page.tsx → renderGeoPage):
+### 4.7 Sticky Layout
 
-Tourism (overview — shows geo name as label + Map icon)
-
-Hotels, Treks, Transports, Guides, Permits
-
-Icons are lucide-react components (NOT emojis)
-
-Count badges from prisma.poi.groupBy
-
-Empty sections show <EmptySection /> message (NOT hidden)
-
-Tourism tab special behavior:
-
-Label = geo.name (e.g., "Pokhara") not "Overview"
-
-Icon = Map (lucide)
-
-Heading on page = geo.name (not "Overview in Pokhara")
-
-4.7 Header Avatar / Dropdown Pattern
-Logged out: "Log in" + "Sign up" buttons
-
-Logged in: Avatar circle only → click opens dropdown
-
-Dropdown items: Profile, Bookings, Trips, Wishlist, Sign out
-
-Logout is inside the dropdown, NOT in header
-
-Click outside closes dropdown
-
-Google users show their Google profile picture
-
-Email users show first letter initial in sky-600 circle
-
-4.8 Sticky Footer
-app/layout.tsx:
-
-tsx
-<body className="min-h-[100dvh] flex flex-col">
+```tsx
+<body className="min-h-[100dvh] bg-[#f8f9fa]">
   <SessionProvider>
-    <SiteHeader />
-    <div className="flex-1 flex flex-col">{children}</div>
-    <SiteFooter />
+    <WishlistProvider>
+      <div className="min-h-[100dvh] flex flex-col">
+        <SiteHeader />                          {/* fixed top-0 h-16 z-50 */}
+        <div className="flex-1 flex flex-col pt-16">{children}</div>
+        <SiteFooter />
+      </div>
+    </WishlistProvider>
   </SessionProvider>
 </body>
-flex-1 on the middle wrapper pushes footer to bottom always.
+SiteHeader is fixed (not sticky) — requires pt-16 on content wrapper
+
+scroll-mt-32 on all anchor-target sections (128px clears header)
+
+WishlistProvider wraps entire app (client component, fetches saved IDs on mount)
+
+4.8 Search Bars (two of them)
+Homepage Search (app/components/SearchBox.tsx):
+
+Searches Geo + POI via /api/search?q=
+
+Debounce 200ms, AbortController
+
+Permit Search (app/components/permits/PermitSearch.tsx):
+
+Searches Permit via /api/permits/search?q=
+
+Overlay with backdrop on focus
+
+Recommendations (5 popular permits + 4 category links) when focused but empty
+
+Results when 2+ chars typed
+
+Matches on name, aliases (JSON via JSON_EXTRACT), description
 
 5. FEATURES COMPLETED
-Phase 1 — Data Layer ✅
-Geo + Poi models with correct relationships
+✅ Geo + POI (Phases 1–5)
+31 geos, 30 POIs in DB
 
-Migration add_geo_and_poi
+/api/search?q= returns geos + POIs
 
-Seeded 31 geos, 30 POIs with structured IDs
+Destination pages: breadcrumb, section tabs, POI cards, empty states
 
-Verified with MySQL queries
+POI detail pages: hero, info grid, about, reviews
 
-Phase 2 — Search API ✅
-GET /api/search?q= returns combined geos + POIs
+✅ Reviews (Phase 6)
+Review table, one per user per POI
 
-Returns { results: [...] } with type, id, name, url, subtitle
+POST recomputes POI average rating
 
-Geo results: /Tourism-g{id}-{slug}
+ReviewForm + ReviewList
 
-POI results: /<Category>_Review-g{id}-d{id}-{slug}
+✅ Auth
+Email/password signup + login
 
-Phase 3 — Search UI ✅
-SearchBox.tsx with 200ms debounce
+Google OAuth with auto-linking
 
-AbortController for stale requests
-
-Click-outside closes dropdown
-
-Category icons per result type
-
-Loading spinner
-
-"No results" message
-
-Phase 4 — Destination Pages ✅
-app/[slug]/page.tsx handles /Tourism-g{id}-{slug} etc.
-
-Breadcrumb from geo tree
-
-Section tabs with count badges
-
-POI card grid
-
-Empty section messages
-
-Canonical slug redirect
-
-Phase 5 — POI Detail Pages ✅
-Same catch-all handles /<Category>_Review-g{id}-d{id}-{slug}
-
-Hero section with category badge
-
-Info grid (location, category, price, rating)
-
-About section (description)
-
-Breadcrumb extending geo tree with POI name at end
-
-Phase 6 — Reviews ✅
-Review table with unique (userId, poiId)
-
-GET /api/reviews?poiId= returns all reviews
-
-POST /api/reviews creates review, recomputes POI rating
-
-Auth required (401 if not logged in)
-
-One review per user per POI (409 if duplicate)
-
-ReviewForm.tsx with star rating + textarea
-
-ReviewList.tsx displays reviews with user info
-
-router.refresh() after submit updates the page
-
-Auth (in parallel) ✅
-Email/password signup and login
-
-Google OAuth signup and login
-
-Auto-linking if same email exists
-
-Google profile picture in header avatar and profile page
-
-Session persistence across page loads
+Profile picture saved from Google
 
 Header dropdown (Profile, Bookings, Trips, Wishlist, Sign out)
 
-Profile Page ✅
-/profile shows user info (name, email, member since)
+Profile page with edit form
 
-Edit form (name + email) with PATCH /api/profile
+✅ Permits System (4 levels)
+DB: 4 categories, 11 subcategories, ~47 permits (17 originals have partial content; 9 new batch2 permits have full content)
 
-Success/error messages
+Routes: hub → category → subcategory → permit detail
 
-Placeholder Pages ✅
-/bookings, /trips, /wishlist — "Coming soon" via PlaceholderPage.tsx
+Hub page: 9 sections + sticky TOC + search
 
-6. KNOWN ISSUES / BUGS
-Issue 1 — Email/Password Login on Google-Only Account
-Symptom: User signs up with Google. Later tries email/password login. Fails with "Invalid email or password."
+Detail page: photo placeholder, about, who-needs/who-doesnt, cost, where, checkpoints, documents, validity, notes, FAQs, related permits, last-updated date
 
-Root cause: passwordHash is NULL for Google-only users. The authorize() function returns null when !user.passwordHash.
+Search: /api/permits/search?q= raw SQL + JSON alias matching
 
-Status: This is expected behavior, not a bug. But the error message is misleading.
+Search UI: PermitSearch overlay component
 
-Recommended fix (not yet applied):
+✅ Wishlist
+Wishlist table (userId, poiId, createdAt)
 
-In auth.ts authorize(): if user.passwordHash is null, throw Error("oauth_only_account")
+WishlistProvider — savedIds: Set<number>, toggle(), isSaved()
 
-In login/page.tsx: catch that error and show "This account was created with Google. Use 'Continue with Google' instead."
+3 endpoints: /api/wishlist, /api/wishlist/ids, /api/wishlist/[poiId]
 
-Long-term: Build a "set password" feature in /profile for OAuth-only users.
+Heart button on PoiCard + PoiHero (absolute positioned, outside Link)
 
-Issue 2 — Prisma Duplicate poiUrl Functions
-File: lib/geo.ts
+/wishlist page: real saved items, remove button, empty state with CTA links
 
-Symptom: Two poiUrl function definitions exist — one uses /Poi_Review-..., one uses /${poiCategoryKey(category)}_Review-....
+Optimistic updates with revert on failure
 
-Status: Needs verification. If both exist, TypeScript will error. Only ONE should exist — the category-specific version.
+✅ Directus CMS (local only)
+Docker at localhost:8055
 
-Recommended fix: Delete the old /Poi_Review-... version. Keep poiCategoryKey + new poiUrl.
+Connected to local MySQL via host.docker.internal
 
-However: Old /Poi_Review-... URLs still resolve (regex accepts any _Review prefix) but don't redirect to canonical. Optional: add category check in renderPoiPage redirect.
+Repeater interfaces: faqs, quickSummary, costDetails
 
-Issue 3 — Google OAuth credentials leaked in chat
-Status: RESOLVED. User rotated Google Client Secret. New credentials in .env, NOT in git.
+Tags interfaces: whoNeeds, whoDoesnt, checkedAt, aliases, whereToGet, documents, relatedSlugs
 
-Ongoing requirement: NEVER paste secrets in chat. Rotate immediately if leaked.
+Markdown for longDescription
 
-Issue 4 — Email Signup Without Google (Potential)
-Status: Not tested. If a user signs up with email/password first, then tries Google with same email, auto-linking should work (because allowDangerousEmailAccountLinking: true). But not verified.
+Datetime for lastVerified
 
-7. CURRENT WORKING FEATURES (VERIFIED)
-✅ Homepage with hero, tabs, SearchBox, DIRECTORY grid
+Workaround: parentId is manual number entry — Directus can't convert existing Int to Many-to-One relation
 
-✅ Search "everest" → returns treks, places
+⚠️ Modular Seeds (IN PROGRESS)
+prisma/seed.ts currently has geos + POIs inline (31 geos + 30 POIs). It is NOT yet the orchestrator.
 
-✅ Search "kathmandu" → returns geos + POIs
+prisma/seeds/permit/special-clearances.ts — CONFIRMED created (module exports seedSpecialClearances(prisma))
 
-✅ Click geo result → /Tourism-g{id}-{slug}
+Other 6 permit modules — status unknown, must verify with ls prisma/seeds/permit/
 
-✅ Click POI result → /<Category>_Review-g{id}-d{id}-{slug}
+prisma/seeds/geo/nepal.ts and prisma/seeds/poi/core.ts — DO NOT EXIST yet
 
-✅ Destination page: breadcrumb, section tabs, POI cards
+package.json has "prisma": { "seed": "tsx prisma/seed.ts" }
 
-✅ Click tab → filters POIs (Hotels only, Treks only)
+6. KNOWN ISSUES
+Issue 1 — Duplicate Tsum Valley Rows
+Row id=33: slug='tsum-valley-restricted-area', parentId=7 (WRONG — under protected-area)
 
-✅ Click POI card → POI detail page
+Row id=34: slug='tsum-valley', parentId=8 (CORRECT — under restricted-area)
 
-✅ POI page: hero, info grid, about, reviews
+Possible THIRD duplicate if batch2 seed created slug='tsum-valley' again
 
-✅ Write review (star rating + text) → submits → page refreshes
+Verify: SELECT id, slug, parentId FROM Permit WHERE slug LIKE '%tsum%';
 
-✅ Duplicate review check → "You have already reviewed"
+Fix: Keep only the row with slug='tsum-valley', parentId=<restricted-area.id>. Delete others.
 
-✅ POI rating updated after each review
+Issue 2 — Old Seed Files Still Exist
+prisma/seed-permits.ts and prisma/seed-permits-batch2.ts still on disk
 
-✅ Signup (email/password) → auto-login
+Fix: Delete after verifying new modular seeds run clean
 
-✅ Login (email/password)
+Issue 3 — 17 Original Permits Have Partial Content
+Missing: longDescription, whoNeeds, whoDoesnt, checkedAt, faqs, lastVerified
 
-✅ Signup (Google) → auto-link → profile picture saved
+Only 9 batch2 permits (Tsum, Nar Phu, Humla, Lower Dolpo, Makalu Barun, Shey Phoksundo, Bardia, Shivapuri, KCAP) have full content
 
-✅ Login (Google)
+Fix: Write content via Directus or extend seeds
 
-✅ Header shows avatar (Google picture or initial)
+Issue 4 — Directus parentId Not a Dropdown
+Directus can't convert Int field to Many-to-One relation after creation
 
-✅ Click avatar → dropdown (Profile, Bookings, Trips, Wishlist, Sign out)
+Workaround: Enter Parent ID manually (see section 4.4 for known IDs)
 
-✅ Click Profile → /profile shows user info + edit form
+Issue 5 — Production is Stale
+Aiven has old schema (before permits/wishlist)
 
-✅ Edit name/email → saves → header updates
+Vercel deployed with old code (only up to auth phase)
 
-✅ Logout from dropdown
+Deferred per user preference — do not deploy without explicit confirmation
 
-✅ Placeholder pages: /bookings, /trips, /wishlist
+Issue 6 — Email/Password Login on Google-Only Account
+Expected behavior (no passwordHash). Error message misleading.
 
-✅ Breadcrumbs work (walk up geo tree)
+Fix (unapplied): Throw Error("oauth_only_account") in authorize() when !user.passwordHash; catch and show friendly message in login page
 
-✅ Section tabs show counts (e.g., "Treks 2")
+Issue 7 — Possible Duplicate poiUrl in lib/geo.ts
+Verify. Only one should exist (the /${poiCategoryKey(category)}_Review-... version)
 
-✅ Empty section shows friendly message
+Fix: Delete the old /Poi_Review-... version if present
 
-✅ Canonical slug redirect
+Issue 8 — Seeds Not Fully Modular Yet ⚠️ CRITICAL
+prisma/seed.ts still contains geos + POIs inline (31 geos + 30 POIs) — NOT an orchestrator
 
-8. IMMEDIATE NEXT STEPS (in order of priority)
-A. Finish Auth Polish (small, 1-2 hours)
-Fix Issue 1: better error message for OAuth-only accounts trying email/password login
+Only prisma/seeds/permit/special-clearances.ts is confirmed created
 
-Verify Issue 2: check lib/geo.ts for duplicate poiUrl — remove old one
+Other 6 permit modules (categories, visa-tims, national-parks, restricted-areas, local-municipality, climbing) — verify with ls prisma/seeds/permit/
 
-Add "Set Password" feature for OAuth-only users (optional)
+prisma/seeds/geo/nepal.ts and prisma/seeds/poi/core.ts — DO NOT EXIST
 
-B. Build Real Wishlist (medium, 2-3 hours)
-Add Wishlist table (id, userId, poiId, createdAt)
+Orchestrator does NOT yet call the permit modules
 
-Add heart button on PoiCard.tsx and PoiHero.tsx
+Fix:
 
-Add POST /api/wishlist and DELETE /api/wishlist/:poiId
+Create missing permit modules (verify each)
+Create seeds/geo/nepal.ts (extract geos array from current seed.ts)
+Create seeds/poi/core.ts (extract pois array from current seed.ts)
+Rewrite prisma/seed.ts to orchestrate: seedGeos → seedPois → seedCategories → seedVisaTims → seedNationalParks → seedRestrictedAreas → seedLocalMunicipality → seedClimbing → seedSpecialClearances
+Delete seed-permits.ts and seed-permits-batch2.ts
+7. IMMEDIATE NEXT STEPS (priority order)
+A. Complete Modular Seed Reorg (1–2 hrs)
+ls prisma/seeds/permit/ — confirm which of 7 files exist
 
-Add GET /api/wishlist for logged-in user
+Create any missing permit modules
 
-Replace /wishlist placeholder with real saved items list
+Create prisma/seeds/geo/nepal.ts — export seedGeos(prisma)
 
-Heart button requires login → redirect to /login?callbackUrl=...
+Create prisma/seeds/poi/core.ts — export seedPois(prisma)
 
-C. Build Real Bookings (medium-large, 3-4 hours)
-Add Booking table (id, userId, poiId, startDate, endDate, guests, totalPrice, status, createdAt)
+Rewrite prisma/seed.ts as orchestrator (imports + sequential await)
 
-Booking form on POI pages
+Run npx prisma db seed
 
-/bookings page shows user's bookings
+Verify counts: 4 / 11 / ~47
 
-Admin view for confirming (deferred)
+Delete seed-permits.ts + seed-permits-batch2.ts
 
-D. Build Real Trip Planner (large, 4-5 hours)
-Add Trip and TripItem tables
+Cleanup: DELETE FROM Permit WHERE id = 33; (and any other Tsum duplicates)
 
-Day-by-day itinerary builder
+B. Fill Content for 17 Original Permits (2–3 hrs)
+Sagarmatha, ACAP, Langtang, Chitwan, TIMS, Visa, Upper Mustang, Manaslu, Upper Dolpo, Kanchenjunga, Khumbu, NMA, MoCTCA, Drone, Filming, Heritage, Adventure
 
-/trips page shows user's trips
+Use Directus or extend seeds with full longDescription, whoNeeds, whoDoesnt, checkedAt, faqs, lastVerified
 
-Drag-to-reorder items
+C. Deploy to Production (1–2 hrs) — DEFERRED, requires confirmation
+Fix Aiven updatedAt default:
 
-E. Facebook Sign-In (small, 15 min)
-Add AUTH_FACEBOOK_ID + AUTH_FACEBOOK_SECRET to .env
+sql
+ALTER TABLE Permit MODIFY COLUMN updatedAt DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3);
+Switch .env to Aiven
 
-Add Facebook({ allowDangerousEmailAccountLinking: true }) to auth.ts
+npx prisma db push
 
-Add "Continue with Facebook" button on login/signup
+npx prisma db seed
 
-F. Deploy (medium, 1-2 hours)
-Set up Neon Postgres (free tier)
+Verify Aiven counts
 
-Change provider = "postgresql" in schema.prisma + migrate
+Switch .env back to local
 
-Deploy to Vercel
+git add . && git commit -m "Add permits system + wishlist" && git push
 
-Update Google OAuth redirect URIs to production URL
+Verify Vercel deploy at https://myhimalayantrip.com
 
-Set environment variables in Vercel
+D. Build Bookings Feature (3–4 hrs) — later
+E. Build Trip Planner (4–5 hrs) — later
+8. CODING PATTERNS & CONVENTIONS
+8.1 Client vs Server Components
+Server by default — no "use client" unless needed
 
-G. More Content
-Add more geos (all 77 districts, key cities, trek regions)
+"use client" required when using: useState, useEffect, useSession, signIn, signOut, event handlers, useRouter
 
-Add more POIs (more treks, hotels, guides)
+Server components prefer auth() over useSession()
 
-Add real images per POI (Mapbox or Unsplash)
-
-Recommended next: A (auth polish) then B (wishlist).
-
-9. CODING PATTERNS & CONVENTIONS
-9.1 Client vs Server Components
-Server components by default — no "use client" unless needed
-
-"use client" required when: using useState, useEffect, useSession, signIn, signOut, event handlers, useRouter from next/navigation
-
-Server components can call auth() — prefer over useSession() when possible
-
-Server components can query Prisma directly — no need for API route just for server-side fetch
-
-9.2 Tailwind Conventions
-Sky-600 is the primary accent color (buttons, links)
-
-Slate is the neutral palette (text, borders)
-
-Rounded corners: rounded-xl (inputs/buttons), rounded-3xl (cards)
-
-Padding: p-6 for cards, px-4 py-2.5 for inputs
-
-Font weights: font-extrabold for headings, font-bold for buttons/labels
-
-Focus rings: focus:border-sky-600 focus:ring-2 focus:ring-sky-100
-
-9.3 Next.js 16 Notes
-params is a Promise — always await params before accessing
+8.2 Next.js 16 Notes
+params is a Promise — always await params
 
 searchParams is a Promise — always await searchParams
 
-cookies(), headers(), draftMode() are Promises — always await
+cookies(), headers(), draftMode() are Promises
 
-Route names can't mix literal text with brackets at same segment level — use single [slug] with regex parsing
+Route names can't mix literal text with brackets at same level
 
-9.4 Prisma Conventions
+8.3 Tailwind
+Sky-600 = primary accent
+
+Slate = neutral palette
+
+rounded-3xl for cards, rounded-xl for inputs
+
+font-extrabold for headings, font-bold for buttons
+
+8.4 Prisma
 Always use prisma singleton from @/lib/prisma
 
-select specific fields when possible (avoid *)
+Use select when possible
 
-Use include for relations when you need the nested object
+upsert for idempotent inserts
 
-Use groupBy for counts
+@@unique([parentId, slug]) for permit slug uniqueness
 
-Always await queries in server components
+8.5 API Routes
+POST returns { error } on 4xx/5xx, { resource } on 201
 
-9.5 API Route Conventions
-POST returns { error: string } with 4xx/5xx on failure
+GET returns { resources: [] } or { resource }
 
-POST returns { <resource>: object } with 201 on success
-
-GET returns { <resource>s: [] } or { <resource>: object }
-
-Always check auth with await auth() for write endpoints
-
-Return early for validation errors
+Auth-check write endpoints with await auth()
 
 Log unexpected errors with console.error
 
-9.6 Client-Side Form Conventions
-useState for all fields
+8.6 Forms
+useState for fields, loading, error
 
-loading state for submit button
+router.refresh() on success (server data)
 
-error string state for validation errors
+router.push(callbackUrl || "/") for navigation
 
-success state (optional) with auto-hide after 3s
+9. THINGS A NEW AI SESSION MUST KNOW
+9.1 DO NOT
+Upgrade Prisma to v8
 
-On success: router.refresh() to re-fetch server data
+Create [geo] and [poi] folders at same level
 
-On navigation success: router.push(callbackUrl || "/")
+Create [category] and [subcategory] as siblings (must be nested)
 
-9.7 TypeScript Conventions
-Define inline types where used
+Hide empty section tabs
 
-Use as casting sparingly (only when Auth.js types are incomplete)
+Put logout button in header (it's in the dropdown)
 
-Define reusable types in types/ folder (e.g., next-auth.d.ts)
+Use mt-auto on footer (use flex-1 on middle wrapper)
 
-Prefer type over interface for data shapes
+Paste secrets in chat
 
-Use Promise<T> for async function params in Next.js 16
+Change the geo ID scheme (977 + gov code + sequence)
 
-10. THINGS A NEW AI SESSION MUST KNOW
-10.1 Do NOT Do These
-Do NOT upgrade Prisma to v8 — stay on 6.x
+Modify seed IDs (referenced by URLs)
 
-Do NOT create [geo] and [poi] folders — use single [slug] with regex parsing
+Use <img> in production (use next/image with domain whitelist — not done yet)
 
-Do NOT hide empty section tabs — show them with <EmptySection /> messages
+Put images in app/ — must go in public/
 
-Do NOT put logout button in header — it lives inside the avatar dropdown
+Deploy to Aiven/Vercel without explicit user confirmation
 
-Do NOT use mt-auto on footer — flex-1 on the middle <div> is the current pattern
+Assume modular seeds are complete — verify prisma/seeds/permit/ first
 
-Do NOT paste secrets in chat — ask user to add to .env themselves
+9.2 DO
+Use await params in all Next.js 16 routes
 
-Do NOT change the ID scheme — 977 + gov code + sequence is locked in
+Use category-specific POI URLs (/<Category>_Review-...)
 
-Do NOT use emojis in section tabs — use lucide-react icons
+Recompute Poi.rating after review POST/DELETE
 
-Do NOT use <img> in production — migrate to next/image with domain whitelist (planned)
+Show count badges in tabs
 
-Do NOT modify seed data IDs — they're referenced by URLs
+Use router.refresh() after form submit
 
-10.2 Do These
-Always test after each phase — don't move forward until working
+Auth-check write endpoints
 
-Always use await params in Next.js 16 routes
+Use Prisma singleton
 
-Always add type field to Geo — country, province, district, city
+Read this file first before writing code
 
-Always use category-specific POI URLs — /<Category>_Review-... not /Poi_Review-...
+Use scroll-mt-32 for anchor targets
 
-Always recompute Poi.rating after POST/DELETE review
+9.3 Files that must stay separated
+Geo + POI pages → app/[slug]/page.tsx (ONE catch-all)
 
-Always show count badges in section tabs
+Permit pages → app/Nepal-Permits/* (4 nested dynamic folders)
 
-Always use router.refresh() after successful form submit (client component)
-
-Always auth-check write endpoints — return 401 if not logged in
-
-Always use the prisma singleton from @/lib/prisma
-
-Always read this file first before writing any code
-
-10.3 Verification Commands
-bash
-# Confirm Prisma client is generated
-npx prisma generate
-
-# Confirm DB is in sync
-npx prisma migrate status
-
-# Confirm tables exist
-mysql -u root -p -e "USE myhimalayantrip; SHOW TABLES;"
-
-# Confirm seed data
-mysql -u root -p -e "USE myhimalayantrip; SELECT COUNT(*) FROM Geo; SELECT COUNT(*) FROM Poi;"
-
-# Confirm schema
-npx prisma studio  # opens http://localhost:5555
-10.4 Environment Variables (required)
-
+10. ENVIRONMENT VARIABLES & ACCESS
+Local .env
+text
 DATABASE_URL="mysql://root:Alwaysbg%40123@localhost:3306/myhimalayantrip"
-AUTH_SECRET="<32-byte-random-string>"
+AUTH_SECRET="<32-byte-base64>"
 AUTH_URL="http://localhost:3000"
 AUTH_TRUST_HOST=true
 AUTH_GOOGLE_ID="<google-client-id>"
 AUTH_GOOGLE_SECRET="<google-client-secret>"
-NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN="<mapbox-token>"
-Note: Password contains @ — must be URL-encoded as %40 in DATABASE_URL.
+NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN="<mapbox>"
+Password contains @ → URL-encode as %40 in DATABASE_URL (Prisma only, NOT Directus).
 
-10.5 Database Access
+Prod (Vercel) — not yet updated
+text
+DATABASE_URL="mysql://avnadmin:<pw>@mysql-mht-barungurung00-41db.f.aivencloud.com:21810/defaultdb?ssl-mode=REQUIRED"
+AUTH_SECRET="<same>"
+AUTH_URL="https://myhimalayantrip.com"
+AUTH_TRUST_HOST=true
+AUTH_GOOGLE_ID="<same>"
+AUTH_GOOGLE_SECRET="<same>"
+Directus Admin (local)
+URL: http://localhost:8055
+
+Email: barungurung00@gmail.com
+
+Password: ChooseAStrongPassword123!
+
+Note: Local only — do not use for production. Rotate before any public deploy.
+
+MySQL (local)
+Host: localhost:3306
+
+User: root
+
+Password: Alwaysbg@123 (URL-encoded: Alwaysbg%40123 for Prisma only)
+
+DB: myhimalayantrip
+
+11. COMMANDS
 bash
-mysql -u root -p
-# password: Alwaysbg@123 (URL-encoded: Alwaysbg%40123)
-sql
-USE myhimalayantrip;
-SHOW TABLES;
-SELECT COUNT(*) FROM Geo;   -- expect 31
-SELECT COUNT(*) FROM Poi;   -- expect 30
-10.6 Test Users in DB
-At least one email/password user exists (created during auth setup)
+# Dev server
+npm run dev                              # localhost:3000
 
-At least one Google user exists (created during Google setup)
+# Prisma
+npx prisma generate
+npx prisma db push                       # local schema sync
+npx prisma db seed                       # runs prisma/seed.ts
+npx prisma migrate deploy                # ONLY if user explicitly confirms prod deploy
 
-Their email addresses are unknown to this context — ask user
+# MySQL
+brew services start mysql                # start when starting work
+brew services stop mysql                 # stop when done (saves battery)
+mysql -u root -p -e "USE myhimalayantrip; ..."
 
-10.7 File Naming Conventions
-Components: PascalCase (SearchBox.tsx, PoiCard.tsx)
+# Directus (Docker)
+cd ~/Desktop/my-ota/directus-local
+docker compose up -d                     # start (localhost:8055)
+docker compose down                      # stop
+docker compose logs -f directus          # tail logs
 
-Utils: kebab or camel (geo.ts, sections.ts)
+# Aiven (production DB) — only when user explicitly asks
+mysql -h mysql-mht-barungurung00-41db.f.aivencloud.com -P 21810 -u avnadmin -p --ssl-mode=REQUIRED
+12. FIXED ISSUES (do not re-solve)
+✅ VerificationToken needs id Int @id @default(autoincrement()) — Aiven requires PK on every table
 
-API routes: lowercase folder name matching HTTP concept (reviews/route.ts)
+✅ Prisma 6.19.3 pinned — Prisma 8 RC breaks migrate dev
 
-Pages: page.tsx inside named folder
+✅ Local MySQL updatedAt has DB default — ran ALTER TABLE Permit MODIFY COLUMN updatedAt DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3); this is required for Directus to insert rows without needing to specify updatedAt. If local DB is ever reset, re-run this ALTER before using Directus.
 
-Dynamic routes: [slug]/page.tsx
+✅ Aiven updatedAt needs same DB default (not yet applied — will run at deploy time)
 
-10.8 What NOT to Ask the User
-The user has already answered these — don't re-ask:
+✅ Next.js 16 params is Promise — always await params
 
-"Do you want a database?" — Yes, MySQL
+✅ Google OAuth scope openid email profile + prompt: consent
 
-"Do you want auth?" — Yes, Auth.js
+✅ Directus bootstrap fails on .local TLD → use @example.com style emails
 
-"Do you want Google login?" — Yes, working
+✅ Directus password must be unencoded (Alwaysbg@123 not %40)
 
-"Should reviews be one-per-user?" — Yes
+✅ Directus parentId can't be converted to relation → manual entry
 
-"Should sections hide when empty?" — No, show empty state
+✅ Docker CLI needs PATH entry in ~/.zshrc
 
-"Should the header have a dropdown?" — Yes, avatar → dropdown
+✅ Images must go in public/permits/ NOT app/Nepal-Permits/images/
 
-"Should logout be in header or dropdown?" — Dropdown
+✅ Footer sticky: min-h-[100dvh] on layout + flex-1 on middle wrapper
 
-"Prisma version?" — Stay on 6.x
+✅ Anchor scroll: scroll-mt-32 on all targets
 
-10.9 What to Ask the User
-If you need to know:
+✅ Next.js forbids two dynamic folders with different names at same level ([geo] + [poi]) — fixed via single [slug] + regex parsing
 
-Any specific bug that's currently breaking the app
-
-Their preference on a new feature before building it
-
-Whether they want to deploy before or after the next feature
-
-The current phase they're ready to start
-
-11. STYLE GUIDE FOR RESPONSES
-When responding to this user:
-
-Explain before code — the user values understanding, not just working code
+13. STYLE GUIDE FOR RESPONSES
+Explain before code — user values understanding, not just working code
 
 One phase at a time — never dump multiple phases
 
-Show the whole file — not diff snippets — when changing files, because the user pastes whole files
+Show the whole file — user pastes whole files, not diffs
 
-Include testing steps — every change should end with "how to test it"
+Include testing steps — every change ends with "how to test"
 
-Confirm before moving on — ask "did it work?" before the next phase
+Confirm before moving on — ask "did it work?"
 
-Use tables — the user likes structured comparisons
+Use tables — user likes structured comparisons
 
-Explain "why" — every decision should have reasoning, not just instructions
+Explain "why" — every decision has reasoning
 
-Keep responses tight — don't pad with filler. Every paragraph should teach or instruct something.
+Keep it tight — no filler
 
-Warn about security — never paste secrets, always URL-encode passwords, always rotate exposed credentials
+Warn about security — no secrets in chat, URL-encode passwords, rotate exposed credentials
 
-Visual summaries at the end — the user likes diagrams and tables that recap what was done
+Visual summaries at the end — user likes recap tables
 
-12. CURRENT PROJECT STATE — LAST UPDATED 2025-10-19
-Phase 6 complete. Auth, data, search, destination pages, POI pages, and reviews all working.
+14. CURRENT PROJECT STATE — LAST UPDATED 2026-10-31
+Working Locally
+✅ Auth (email + Google, profile picture, dropdown)
 
-Verified working today:
+✅ Geo + POI (search, destination pages, POI detail, reviews)
 
-Google sign-in with profile picture
+✅ Permits (4 levels, ~47 permits, search, hub with 9 sections + TOC)
 
-Auth dropdown in header
+✅ Wishlist (heart button, /wishlist page, provider context)
 
-Profile page with edit form
+✅ Directus CMS (localhost:8055, editing Permit table with Repeater/Tags)
 
-Placeholder pages for bookings/trips/wishlist
+⚠️ Modular seeds — partially done (only special-clearances confirmed)
 
-Known issues:
+✅ Sticky footer + fixed header work on all pages
 
-Email/password login on Google-only account shows confusing error (planned fix)
+Not Deployed (deferred by user choice)
+Everything built since auth phase (permits, wishlist, search API v2) is local only
 
-Possible duplicate poiUrl in lib/geo.ts (needs verification)
+Aiven has old schema
 
-Next planned work:
+Vercel has old code
 
-Fix the email/password error message for OAuth-only users (30 min)
+Immediate Blocker
+Complete modular seed reorg (see Issue 8, Section 7-A)
 
-Verify lib/geo.ts has only one poiUrl (5 min)
+Verify which prisma/seeds/permit/* files exist
 
-Build real Wishlist feature (2-3 hours)
+Create seeds/geo/nepal.ts + seeds/poi/core.ts
 
-Build real Bookings feature (3-4 hours)
+Rewrite prisma/seed.ts as orchestrator
 
-App is deployable at any moment. All features work locally. No blockers.
+Delete deprecated seed-permits.ts + seed-permits-batch2.ts
 
-13. PROJECT MILESTONES TIMELINE
-Phase 1 (Data) — Geo + Poi tables, migrations, seed
+Delete duplicate Permit.id = 33
 
-Phase 2 (Search API) — /api/search endpoint
+Recommended Next
+Complete modular seed reorg (1–2 hrs)
 
-Phase 3 (Search UI) — SearchBox with debounce
+Fill content for 17 original permits (2–3 hrs)
 
-Phase 4 (Destination Pages) — /[slug] catch-all for section pages
+Deploy to production (1–2 hrs) — after user confirms
 
-Phase 5 (POI Pages) — Same catch-all for POI detail
-
-Phase 6 (Reviews) — Review table, form, list, rating recompute
-
-Auth (parallel) — Email/password + Google OAuth + profile picture
-
-Profile (parallel) — User info display + edit form
-
-Placeholders — /bookings, /trips, /wishlist
-
-Next milestone: Wishlist feature (real data) OR Deploy to Vercel.
-
-14. HOW TO USE THIS FILE
+15. HOW TO USE THIS FILE
 For a new AI session:
 
 Read this entire file
 
-Ask the user: "Ready to continue. What are we working on?"
+Reply: "I've read AI_CONTEXT.md. Here's what I understand: [tech stack], [last 3 things built], [what's broken], [what's next]."
 
-Wait for their instruction
+Wait for user's instruction before writing code
 
-Reference the appropriate section of this file when needed
+Reference relevant sections
 
 Test after every change
 
-Update this file when a major decision is made
+Update this file when major decisions are made
 
 For the user:
 
-Paste this file at the start of a new chat
+Paste this at start of new chat
 
 Say: "This is my project. Read AI_CONTEXT.md and confirm you understand it."
 
-The AI will acknowledge and be ready to continue
+AI acknowledges and continues
 
 For updating this file:
 
-Add new completed features to Section 5
+Add completed features to Section 5
 
 Remove fixed bugs from Section 6
 
-Update Section 8 with next steps
+Update Section 7 with next steps
 
-Update Section 12 with current state
+Update Section 14 with current state
 
-Update the "last updated" date
+Update "last updated" date at top
+
+Full conversation history:
+The prior DeepSeek chat was shared via a link. Ask the user for it if more reasoning/history is needed beyond this file.
 
 End of AI_CONTEXT.md
 
+1	Added "How to use this file" at top for new AI	Section 0 (new)
+2	Added "Deploy deferred" preference — do not push to Aiven/Vercel without confirmation	Section 1
+3	Clarified seed status — only special-clearances.ts confirmed; other 6 permit modules status unknown; geo/nepal.ts and poi/core.ts don't exist	Section 3
+4	Fixed permit count from "~42" to "~47"	Section 5
+5	Marked modular seeds as "IN PROGRESS" not done	Section 5
+6	Added known subcategory IDs reference (tims=6, protected-area=7, restricted-area=8, etc.)	Section 4.4
+7	Expanded Issue 1 — triple duplicate Tsum Valley possibility + verification query	Section 6
+8	Added Issue 8 — Seeds Not Fully Modular Yet (CRITICAL)	Section 6
+9	Expanded next steps with 9-step seed reorg checklist	Section 7-A
+10	Added "DO NOT deploy without confirmation" + "DO NOT assume modular seeds are complete" to DO NOT rules	Section 9.1
+11	Added Directus admin credentials (email + password) to environment section	Section 10
+12	Added local MySQL updatedAt ALTER fix to Fixed Issues (critical if DB reset)	Section 12
+13	Added routing note — app/[slug]/page.tsx does NOT catch /Nepal-Permits/*	Section 4.1
+14	Added DeepSeek chat share link placeholder at end	Section 15
+15	Updated "last updated" date to 2026-10-31	Top of file
 
-
-## Where to Save It
-
-Save to your project root:
-/Users/barun/Desktop/my-ota/AI_CONTEXT.md
-
-
-
-## Why It's Committed (Not Gitignored)
-
-Unlike `.env`, this file contains **no secrets**. It's safe to commit. In fact, committing it means:
-
-- Any AI session opened on a fresh clone can read it
-- Any collaborator sees the same context
-- Future-you has a handoff document
-
-Add it to git:
-
-```bash
-git add AI_CONTEXT.md
-git commit -m "Add project handoff document"
-How to Use It
-In this chat (if we continue): No need — I already have the context.
-
-In a new chat:
-
-Open new chat
-
-Paste AI_CONTEXT.md contents (or just say "Read AI_CONTEXT.md from /Users/barun/Desktop/my-ota/")
-
-Say: "Continue where we left off."
-
-The AI will read it, confirm understanding, and be ready.
-
-What It Doesn't Include
-Secrets — .env contents are shown as placeholders, not real values
-
-Full source code — it references file paths, not the code itself (files are still on your disk)
-
-Full seed data — it says "31 geos, 30 POIs" but not the full list (the seed script has that)
-
-If you want to preserve the actual seed data somewhere accessible, that's a separate file:
-
-bash
-# Save a snapshot of your current data
-mysql -u root -p myhimalayantrip -e "SELECT * FROM Geo;" > data_geos_backup.sql
-mysql -u root -p myhimalayantrip -e "SELECT * FROM Poi;" > data_pois_backup.sql
-But that's optional — the seed script (prisma/seed.ts) already contains all the data.
-
-Optional — Add a Short README
-For completeness, add this to README.md:
-
-markdown
-# MyHimalayanTrip
-
-Nepal travel & treks directory. TripAdvisor-style structure, Nepal-specific content.
-
-## Quick Start
-
-```bash
-npm install
-npx prisma migrate dev
-npx prisma db seed
-npm run dev
-Open http://localhost:3000
-
-Read This First
-See AI_CONTEXT.md for full project context — architecture, decisions, current state, and next steps.
-
-Stack
-Next.js 16 · Tailwind · Auth.js v5 · Prisma 6 · MySQL
-
-
-
-
-## Summary
-
-You now have:
-
-1. **`AI_CONTEXT.md`** — the full handoff (paste at start of new chat)
-2. **`README.md`** — quick-start for humans
-3. **Your actual code** — unchanged, still on disk
-
-**When you hit the chat limit**, paste the `AI_CONTEXT.md` contents at the start of the new chat and say:
-
-> "This is my project. I've saved the context in AI_CONTEXT.md. Please read it and confirm you're ready to continue where we left off."
-
-The new AI session will have everything it needs.

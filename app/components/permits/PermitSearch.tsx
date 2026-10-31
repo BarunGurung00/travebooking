@@ -142,7 +142,7 @@ export default function PermitSearch({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => setFocused(true)}
-            placeholder="Search permits: TIMS, Everest, drone..."
+            placeholder="Search permits: TIMS, EBC Permit, Drone..."
             className="w-full bg-transparent text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none px-3"
           />
           {loading && (
